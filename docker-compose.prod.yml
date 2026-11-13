@@ -1,0 +1,112 @@
+# Production (VPS) ke liye. Dev wali docker-compose.yml se alag hai.
+# Chalane ka tareeka: docs/GO_LIVE.md
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+x-app: &app
+  build: .
+  env_file: .env.production
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "5"}
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-wabot}
+      POSTGRES_USER: ${POSTGRES_USER:-wabot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env.production me set karo}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/db-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    # ports nahi khole: database sirf andar ke network me hai, internet par nahi
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wabot} -d ${POSTGRES_DB:-wabot}"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  web:
+    <<: *app
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60
+             --access-logfile -"
+    healthcheck:
+      # Host aur https ka header dena zaroori hai, warna Django 400/redirect deta hai
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import os, urllib.request as u;
+          u.urlopen(u.Request('http://127.0.0.1:8000/health/',
+          headers={'Host': os.environ['DOMAIN'], 'X-Forwarded-Proto': 'https'}), timeout=3)
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    <<: *app
+    command: celery -A config worker -l info --concurrency 2
+
+  # Reminders ka timer. Sirf EK beat chalna chahiye.
+  beat:
+    <<: *app
+    command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
+
+  # HTTPS apne aap (Let's Encrypt). Domain ka DNS A record is server par point hona chahiye.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN .env.production me set karo}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+  # Apna LLM isi server par chalana ho to: --profile llm  (RAM/GPU dekho, docs/SELF_HOSTED_LLM.md)
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["llm"]
+    restart: unless-stopped
+    environment:
+      OLLAMA_CONTEXT_LENGTH: "8192"
+      OLLAMA_KEEP_ALIVE: "24h"  # model memory me tika rahe, pehle jawab par dheema load na ho
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:
+  ollama_data:

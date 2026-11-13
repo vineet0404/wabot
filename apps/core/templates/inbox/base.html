@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Inbox{% endblock %}</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f6f7f9; --card:#fff; --ink:#1b1f23; --mute:#6b7280;
+          --line:#e5e7eb; --in:#eef2f7; --out:#dcf8c6; --warn:#b45309; --ok:#15803d; --bad:#b91c1c; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111418; --card:#1a1f25; --ink:#e8eaed;
+          --mute:#9aa3ae; --line:#2b323a; --in:#252c35; --out:#1f4d2e; } }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui, sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:16px; }
+  h1 { font-size:1.25rem; } h2 { font-size:1rem; color:var(--mute); margin:24px 0 8px; }
+  a { color:inherit; }
+  .row { display:block; background:var(--card); border:1px solid var(--line); border-radius:10px;
+         padding:10px 12px; margin:6px 0; text-decoration:none; }
+  .mute { color:var(--mute); font-size:.85rem; }
+  .bubble { max-width:85%; padding:8px 12px; border-radius:12px; margin:6px 0; white-space:pre-wrap; }
+  .in { background:var(--in); } .out { background:var(--out); margin-left:auto; }
+  .flash { padding:8px 12px; border-radius:8px; margin:8px 0; background:var(--card);
+           border:1px solid var(--line); }
+  .flash.error { color:var(--bad); } .flash.success { color:var(--ok); }
+  textarea { width:100%; box-sizing:border-box; min-height:90px; padding:8px; font:inherit;
+             background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:8px; }
+  button { font:inherit; padding:8px 14px; border-radius:8px; border:1px solid var(--line);
+           background:var(--card); color:var(--ink); cursor:pointer; margin-top:8px; }
+  button.primary { background:#2563eb; color:#fff; border-color:#2563eb; }
+  .warn { color:var(--warn); }
+  .flash.warning { color:var(--warn); }
+</style>
+</head>
+<body><main>
+{% for m in messages %}<div class="flash {{ m.tags }}">{{ m }}</div>{% endfor %}
+<p class="mute"><a href="{% url 'inbox' %}">Chats</a> · <a href="{% url 'bookings' %}">Bookings</a></p>
+{% block body %}{% endblock %}
+</main></body>
+</html>

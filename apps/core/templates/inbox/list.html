@@ -1,0 +1,28 @@
+{% extends "inbox/base.html" %}
+{% block body %}
+<h1>Inbox</h1>
+
+<h2>Aapke jawab ka intezaar ({{ needs_human|length }})</h2>
+{% for c in needs_human %}
+  <a class="row" href="{% url 'inbox-detail' c.pk %}">
+    <strong>{{ c.customer.name|default:c.masked_phone }}</strong>
+    <span class="mute">{{ c.tenant.name }} · {{ c.last_message_at|timesince }} pehle</span>
+  </a>
+{% empty %}<p class="mute">Koi nahi. Bot sab sambhal raha hai.</p>{% endfor %}
+
+<h2>Bot ko jawab nahi mila ({{ flagged|length }})</h2>
+{% for c in flagged %}
+  <a class="row" href="{% url 'inbox-detail' c.pk %}">
+    <strong>{{ c.customer.name|default:c.masked_phone }}</strong>
+    <span class="mute">{{ c.tenant.name }} · {{ c.last_message_at|timesince }} pehle</span>
+  </a>
+{% empty %}<p class="mute">Koi nahi.</p>{% endfor %}
+
+<h2>Haal ki chats</h2>
+{% for c in recent %}
+  <a class="row" href="{% url 'inbox-detail' c.pk %}">
+    {{ c.customer.name|default:c.masked_phone }}
+    <span class="mute">{{ c.tenant.name }} · {{ c.get_state_display }}</span>
+  </a>
+{% empty %}<p class="mute">Abhi koi chat nahi.</p>{% endfor %}
+{% endblock %}

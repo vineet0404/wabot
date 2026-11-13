@@ -1,0 +1,29 @@
+{% extends "inbox/base.html" %}
+{% block body %}
+<p><a href="{% url 'inbox' %}">&larr; Inbox</a></p>
+<h1>{{ conv.customer.name|default:conv.customer.phone }}</h1>
+<p class="mute">{{ conv.customer.phone }} · {{ conv.tenant.name }} · {{ conv.get_state_display }}</p>
+
+{% for m in thread %}
+  <div class="bubble {{ m.direction }}">{{ m.body|default:"(text nahi, "|add:m.type|add:")" }}
+    <div class="mute">{{ m.created_at|date:"d M, H:i" }}{% if m.flag %} · {{ m.flag }}{% endif %}</div>
+  </div>
+{% endfor %}
+
+{% if window_open %}
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="action" value="reply">
+  <textarea name="body" maxlength="1000" placeholder="Jawab likho..." required></textarea>
+  <button class="primary" type="submit">Bhejo</button>
+</form>
+{% else %}
+<p class="warn">24 ghante ki window band hai. Customer ka naya message aane tak reply nahi ja sakta.</p>
+{% endif %}
+
+{% if conv.state == "human" %}
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="action" value="release">
+  <button type="submit">Bot ko wapas do</button>
+</form>
+{% endif %}
+{% endblock %}

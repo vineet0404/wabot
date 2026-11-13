@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest
+      - name: Production security check
+        env:
+          DJANGO_DEBUG: "0"
+          DJANGO_SECRET_KEY: ci-only-not-a-real-secret-key-0123456789-abcdefghijklmnopqrstuvwxyz
+          FIELD_ENCRYPTION_KEY: 7Yk3mS0x4cQ1Zr8m2n5pLw9Vd6Tg1uJb3Hf0aXc4eRo=
+          USE_SQLITE: "1"
+          USE_LOCMEM_CACHE: "1"
+          DJANGO_ALLOWED_HOSTS: example.com
+        run: python manage.py check --deploy --fail-level WARNING

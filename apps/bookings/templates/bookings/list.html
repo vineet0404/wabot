@@ -1,0 +1,36 @@
+{% extends "inbox/base.html" %}
+{% block body %}
+<h1>Bookings</h1>
+
+<h2>Aapke confirm ka intezaar ({{ requested|length }})</h2>
+{% for b in requested %}
+  <div class="row">
+    <strong>{{ b.display_name }}</strong> · {{ b.when }}
+    <div class="mute">{{ b.tenant.name }} · {{ b.masked_phone }}{% if b.service %} · {{ b.service }}{% endif %}
+      · <a href="{% url 'inbox-detail' b.conversation_id %}">chat dekho</a></div>
+    {% if b.clash_list %}<div class="warn">Dhyan: is samay pehle se confirm hai:
+      {% for c in b.clash_list %}{{ c.display_name }} ({{ c.when_text }}){% if not forloop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+    <form method="post" action="{% url 'booking-action' b.pk %}">{% csrf_token %}
+      <button class="primary" name="action" value="confirm">Confirm</button>
+      <button name="action" value="reject">Mana karo</button>
+    </form>
+  </div>
+{% empty %}<p class="mute">Koi nahi.</p>{% endfor %}
+
+<h2>Aane wale confirm appointments ({{ upcoming|length }})</h2>
+{% for b in upcoming %}
+  <div class="row">
+    <strong>{{ b.display_name }}</strong> · {{ b.when }}
+    <div class="mute">{{ b.tenant.name }} · {{ b.masked_phone }}{% if b.service %} · {{ b.service }}{% endif %}
+      {% if b.reminder_sent_at %}· reminder gaya{% endif %}</div>
+    <form method="post" action="{% url 'booking-action' b.pk %}">{% csrf_token %}
+      <button name="action" value="cancel">Cancel</button>
+    </form>
+  </div>
+{% empty %}<p class="mute">Koi nahi.</p>{% endfor %}
+
+<h2>Purane</h2>
+{% for b in past %}
+  <div class="row mute">{{ b.display_name }} · {{ b.when }} · {{ b.get_status_display }}</div>
+{% empty %}<p class="mute">Koi nahi.</p>{% endfor %}
+{% endblock %}

@@ -1,0 +1,15 @@
+# Ollama me apna model banane ke liye. Pehle ise copy karke Modelfile naam do.
+#   ollama create wabot-v1 -f Modelfile
+# FROM me apni GGUF file ka naam do (docs/FINETUNE.md me banane ka tarika hai).
+FROM ./wabot-q4_k_m.gguf
+
+PARAMETER temperature 0.3
+PARAMETER num_ctx 4096
+PARAMETER stop "<|im_end|>"
+
+# Ye Qwen ka ChatML format hai. Dusra base model lo to uska asli template copy karo:
+#   ollama show qwen2.5:3b --modelfile
+TEMPLATE """{{- range .Messages }}<|im_start|>{{ .Role }}
+{{ .Content }}<|im_end|>
+{{ end }}<|im_start|>assistant
+"""

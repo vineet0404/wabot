@@ -1,0 +1,8 @@
+# Sirf fine-tuning ke liye (GPU wali machine ya Colab par). App ke Docker image me nahi jata.
+# torch Colab/Kaggle me pehle se hota hai. Apne computer par pehle pytorch install karo (pytorch.org).
+transformers>=4.46
+peft>=0.13
+accelerate>=1.0
+bitsandbytes>=0.43
+sentencepiece
+requests
